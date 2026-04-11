@@ -3,6 +3,29 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 
 export const Route = createFileRoute('/')({
   component: HuddleLanding,
+  head: () => ({
+    meta: [
+      {
+        title:
+          'Huddle — Youth Management App | Organize Your Friday Night Youth Group',
+      },
+      {
+        name: 'description',
+        content:
+          'Huddle is the all-in-one youth management app for Friday night youth groups. Run sheets, rosters, attendance, communication, and safety tools — built for youth leaders and the young people they serve.',
+      },
+      {
+        property: 'og:title',
+        content:
+          'Huddle — Youth Management App | Organize Your Friday Night Youth Group',
+      },
+      {
+        property: 'og:description',
+        content:
+          'The youth management app that helps leaders lead with clarity and youth feel like they belong. Try Huddle for your Friday night youth group.',
+      },
+    ],
+  }),
 })
 
 function encode(data: Record<string, string>) {
@@ -478,6 +501,7 @@ export default function HuddleLanding() {
 
         <div className="relative z-10">
           <div className="animate-fade-in mb-6">
+            <h1 className="sr-only">Huddle — Youth Management App for Friday Night Youth Groups</h1>
             <HuddleLogo size="hero" />
           </div>
 
