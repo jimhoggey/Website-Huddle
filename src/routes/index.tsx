@@ -125,14 +125,40 @@ function HuddleLogo({ size = 'md', light = false }: { size?: 'sm' | 'md' | 'lg' 
   const heroStyle = size === 'hero'
     ? { fontSize: 'clamp(4rem, 12vw, 8rem)', letterSpacing: '-0.05em', lineHeight: 1 }
     : { letterSpacing: '-0.02em' }
+  const logoLetters = ['H', 'u', 'd', 'd', 'l', 'e']
+  const handleLogoMouseMove = (e: React.MouseEvent<HTMLSpanElement>) => {
+    const bounds = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - bounds.left) / bounds.width) * 100
+    const y = ((e.clientY - bounds.top) / bounds.height) * 100
+    e.currentTarget.style.setProperty('--logo-grad-x', `${x}%`)
+    e.currentTarget.style.setProperty('--logo-grad-y', `${y}%`)
+  }
+
+  const handleLogoMouseLeave = (e: React.MouseEvent<HTMLSpanElement>) => {
+    e.currentTarget.style.setProperty('--logo-grad-x', '50%')
+    e.currentTarget.style.setProperty('--logo-grad-y', '50%')
+  }
 
   return (
     <span
-      className={`font-bold tracking-tight ${sizes[size]} ${light ? 'text-white' : 'text-[#1a1a1a]'}`}
+      className={`logo-word font-bold tracking-tight ${sizes[size]} ${light ? 'text-white' : 'text-[#1a1a1a]'}`}
       style={heroStyle}
+      onMouseMove={handleLogoMouseMove}
+      onMouseLeave={handleLogoMouseLeave}
     >
-      Huddle
-      <span className="text-gradient-static" style={{ WebkitTextFillColor: '#7C3AED' }}>.</span>
+      {logoLetters.map((letter, index) => (
+        <span
+          key={`${letter}-${index}`}
+          className="logo-letter"
+        >
+          {letter}
+        </span>
+      ))}
+      <span
+        className="logo-letter logo-dot-gradient"
+      >
+        .
+      </span>
     </span>
   )
 }
@@ -485,6 +511,7 @@ export default function HuddleLanding() {
   const [navSolid, setNavSolid] = useState(false)
   const [currentSloganIndex, setCurrentSloganIndex] = useState(0)
   const [isSloganVisible, setIsSloganVisible] = useState(true)
+  const [heroPointer, setHeroPointer] = useState({ x: 50, y: 35, active: false })
 
   useEffect(() => {
     const handleScroll = () => setNavSolid(window.scrollY > 60)
@@ -504,6 +531,17 @@ export default function HuddleLanding() {
 
     return () => window.clearInterval(cycleInterval)
   }, [heroSlogans.length])
+
+  const handleHeroMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const bounds = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - bounds.left) / bounds.width) * 100
+    const y = ((e.clientY - bounds.top) / bounds.height) * 100
+    setHeroPointer({ x, y, active: true })
+  }
+
+  const handleHeroMouseLeave = () => {
+    setHeroPointer({ x: 50, y: 35, active: false })
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -534,12 +572,23 @@ export default function HuddleLanding() {
             ;(e.target as HTMLElement).style.boxShadow = '0 2px 12px rgba(124, 58, 237, 0.25)'
           }}
         >
-          Get Early Access
+          Join the mission
         </a>
       </nav>
 
       {/* ── HERO ───────────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center justify-center min-h-screen text-center px-6 pt-20 overflow-hidden">
+      <section
+        className="relative flex flex-col items-center justify-center min-h-screen text-center px-6 pt-20 overflow-hidden"
+        onMouseMove={handleHeroMouseMove}
+        onMouseLeave={handleHeroMouseLeave}
+      >
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at ${heroPointer.x}% ${heroPointer.y}%, rgba(124, 58, 237, ${heroPointer.active ? 0.2 : 0.12}) 0%, rgba(139, 92, 246, 0.08) 30%, transparent 65%)`,
+            transition: 'background 220ms ease',
+          }}
+        />
         {/* Floating orbs */}
         <div className="hero-orb hero-orb-1" />
         <div className="hero-orb hero-orb-2" />
