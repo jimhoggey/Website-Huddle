@@ -436,6 +436,37 @@ function EarlyAccessForm() {
 /* ── MAIN LANDING PAGE ─────────────────────────────────────── */
 
 export default function HuddleLanding() {
+  const heroSlogans = [
+    {
+      primary: 'Serving youth leaders,',
+      highlight: 'so every young person is known and cared for.',
+    },
+    {
+      primary: 'Built for ministry nights',
+      highlight: 'where leaders serve well and youth truly belong.',
+    },
+    {
+      primary: 'Helping your team steward every Friday night',
+      highlight: 'with clarity, care, and purpose.',
+    },
+    {
+      primary: 'The operating system',
+      highlight: 'for modern youth ministry.',
+    },
+    {
+      primary: 'One platform',
+      highlight: 'to run safer, smoother, more connected youth nights.',
+    },
+    {
+      primary: 'From run sheet to roster to comms —',
+      highlight: 'Huddle keeps your whole night in sync.',
+    },
+    {
+      primary: 'A youth-first platform',
+      highlight: 'that turns Friday night chaos into coordinated impact.',
+    },
+  ]
+
   const storyRef = useReveal()
   const twoWorldsRef = useReveal()
   const featuresRef = useReveal()
@@ -452,12 +483,27 @@ export default function HuddleLanding() {
   }, [parallaxRef, propelRevealRef])
 
   const [navSolid, setNavSolid] = useState(false)
+  const [currentSloganIndex, setCurrentSloganIndex] = useState(0)
+  const [isSloganVisible, setIsSloganVisible] = useState(true)
 
   useEffect(() => {
     const handleScroll = () => setNavSolid(window.scrollY > 60)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  useEffect(() => {
+    const cycleInterval = window.setInterval(() => {
+      setIsSloganVisible(false)
+
+      window.setTimeout(() => {
+        setCurrentSloganIndex((prev) => (prev + 1) % heroSlogans.length)
+        setIsSloganVisible(true)
+      }, 450)
+    }, 10000)
+
+    return () => window.clearInterval(cycleInterval)
+  }, [heroSlogans.length])
 
   return (
     <div className="min-h-screen bg-white">
@@ -509,8 +555,21 @@ export default function HuddleLanding() {
             className="animate-rise-in-slow text-[#6b7280] font-light mx-auto"
             style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)', maxWidth: '520px', lineHeight: 1.7 }}
           >
-            Where youth leaders lead with Youth {' '}
-            <span style={{ color: '#7C3AED' }}>on a platform that puts Youth first.</span>
+            <span
+              style={{
+                display: 'inline-block',
+                opacity: isSloganVisible ? 1 : 0,
+                transform: isSloganVisible ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'opacity 450ms ease, transform 450ms ease',
+              }}
+            >
+              <span style={{ color: '#1a1a1a' }}>
+                {heroSlogans[currentSloganIndex].primary}{' '}
+              </span>
+              <span style={{ color: '#7C3AED' }}>
+                {heroSlogans[currentSloganIndex].highlight}
+              </span>
+            </span>
           </p>
 
           <div className="animate-rise-in-slow mt-8 flex items-center justify-center gap-4 opacity-0" style={{ animationDelay: '1.2s' }}>
