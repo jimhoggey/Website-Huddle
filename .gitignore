@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build and tool output
+dist/
+.tanstack/
+src/routeTree.gen.ts
+
+# Local environment and logs
+.env
+.env.*
+*.log
+
+# Local Netlify folder
+.netlify/
+
+# OS files
+.DS_Store
