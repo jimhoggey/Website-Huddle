@@ -509,8 +509,8 @@ export default function HuddleLanding() {
             className="animate-rise-in-slow text-[#6b7280] font-light mx-auto"
             style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)', maxWidth: '520px', lineHeight: 1.7 }}
           >
-            Where youth leaders lead with clarity{' '}
-            <span style={{ color: '#7C3AED' }}>and youth feel like they belong.</span>
+            Where youth leaders lead with Youth {' '}
+            <span style={{ color: '#7C3AED' }}>on a platform that puts Youth first.</span>
           </p>
 
           <div className="animate-rise-in-slow mt-8 flex items-center justify-center gap-4 opacity-0" style={{ animationDelay: '1.2s' }}>
