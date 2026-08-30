@@ -79,7 +79,7 @@ deployment. `wrangler.toml` carries the same output directory so CLI deploys
 ### Custom domain
 
 `public/robots.txt` and `public/sitemap.xml` currently point at
-`https://youthhuddle.pages.dev`. Update both to the production hostname once a
+`https://tryhuddle.pages.dev`. Update both to the production hostname once a
 custom domain is attached in **Pages → Custom domains**.
 
 ## Forms
