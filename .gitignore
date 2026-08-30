@@ -11,8 +11,9 @@ src/routeTree.gen.ts
 .env.*
 *.log
 
-# Local Netlify folder
-.netlify/
+# Cloudflare Wrangler local state
+.wrangler/
+.dev.vars
 
 # OS files
 .DS_Store

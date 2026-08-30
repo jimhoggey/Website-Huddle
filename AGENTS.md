@@ -4,7 +4,9 @@ This document provides an overview of the project structure for developers and A
 
 ## Project Overview
 
-An interactive resume/portfolio application with an AI-powered assistant. Built with TanStack Start and deployed on Netlify.
+Huddle — a marketing landing page for a youth management app built for Friday
+night youth groups. Built with TanStack Start, prerendered to static HTML, and
+deployed on Cloudflare Pages.
 
 ### Tech Stack
 
@@ -14,86 +16,94 @@ An interactive resume/portfolio application with an AI-powered assistant. Built 
 | Frontend | React 19, TanStack Router v1 |
 | Build | Vite 7 |
 | Styling | Tailwind CSS 4 |
-| UI Components | Radix UI + custom components |
-| Content | Content Collections (type-safe markdown) |
-| AI | TanStack AI with multi-provider support |
 | Language | TypeScript 5.7 (strict mode) |
-| Deployment | Netlify |
+| Forms | Formspree (`@formspree/react`) |
+| Deployment | Cloudflare Pages |
 
 ## Directory Structure
 
 ```
 ├── public
+│   ├── _headers          # Cloudflare Pages response headers (security + asset caching)
 │   ├── favicon.ico
-│   ├── logo.png
-│   ├── tanstack-circle-logo.png
-│   └── tanstack-word-logo-white.svg  # TanStack wordmark logo (white) used in header/nav.
+│   ├── robots.txt
+│   └── sitemap.xml
 ├── src
-│   ├── components
-│   │   ├── Header.tsx  # Header.
-│   │   ├── HeaderNav.tsx  # Navigation sidebar template: mobile menu, Home link, add-on routes; EJS-driven for dynamic route generation.
-│   │   ├── ProductAIAssistant.tsx  # AI marketing assistant.
-│   │   └── ProductRecommendation.tsx  # Product recommendation card.
-│   ├── data
-│   │   └── products.ts  # Product catalog data template.
-│   ├── lib
-│   │   ├── product-ai-hook.ts  # useProductChat hook.
-│   │   └── product-tools.ts  # AI tools: getProducts, recommendProduct.
 │   ├── routes
-│   │   ├── products
-│   │   │   └── $productId.tsx  # Product detail page with recommendation.
-│   │   ├── __root.tsx  # Root layout: Header, styles.
-│   │   ├── api.product-chat.ts  # POST handler for product AI chat.
-│   │   └── index.tsx  # Marketing home with ProductAIAssistant.
-│   ├── store
-│   │   └── product-assistant.ts  # Zustand store for assistant state.
-│   ├── router.tsx  # TanStack Router setup: creates router from generated routeTree with scroll restoration.
-│   └── styles.css  # Global styles.
-├── .gitignore  # Template for .gitignore: node_modules, dist, .env, .netlify, .tanstack, etc.
-├── AGENTS.md  # This document provides an overview of the project structure for developers and AI agents working on this codebase.
-├── netlify.toml  # Netlify deployment config: build command (vite build), publish directory (dist/client), and dev server settings (port 8888, target 3000).
-├── package.json  # Project manifest with TanStack Start, React 19, Vite 7, Tailwind CSS 4, and Netlify plugin dependencies; defines dev and build scripts.
-├── pnpm-lock.yaml
-├── tsconfig.json  # TypeScript config: ES2022 target, strict mode, @/* path alias for src/*, bundler module resolution.
-└── vite.config.ts  # Vite config template: TanStack Start, React, Tailwind, Netlify plugin, and optional add-on integrations; processed by EJS.
+│   │   ├── __root.tsx    # Root document: head metadata, JSON-LD, <html> shell
+│   │   └── index.tsx     # The entire landing page + early-access form
+│   ├── router.tsx        # TanStack Router setup from the generated routeTree
+│   └── styles.css        # Global styles, animations, CSS custom properties
+├── AGENTS.md             # This document
+├── README.md
+├── package.json
+├── tsconfig.json         # ES2022, strict, @/* path alias for src/*
+├── vite.config.ts        # TanStack Start (prerender enabled), React, Tailwind
+└── wrangler.toml         # Cloudflare Pages project config
 ```
 
 ## Key Concepts
+
+### Static prerendering
+
+`vite build` renders every route to static HTML in `dist/client`. Cloudflare
+Pages serves that directory directly — there is **no** server runtime, Worker,
+or Pages Function. Anything needing a server would have to be added
+deliberately (a `functions/` directory would turn on Pages Functions).
+
+This is why full page content appears in `dist/client/index.html`: SEO and
+social crawlers get real markup, not an empty SPA shell.
 
 ### File-Based Routing (TanStack Router)
 
 Routes are defined by files in `src/routes/`:
 
-- `__root.tsx` - Root layout wrapping all pages
-- `index.tsx` - Route for `/`
-- `api.*.ts` - Server API endpoints (e.g., `api.resume-chat.ts` → `/api/resume-chat`)
+- `__root.tsx` — Root layout wrapping all pages
+- `index.tsx` — Route for `/`
 
-### Component Architecture
+`src/routeTree.gen.ts` is generated at build/dev time and is gitignored.
 
-**UI Primitives** (`src/components/ui/`):
-- Radix UI-based, Tailwind-styled
-- Card, Badge, Checkbox, Separator, HoverCard
+### The early-access form
 
-**Feature Components** (`src/components/`):
-- Header, HeaderNav, ResumeAssistant
+`EarlyAccessForm` in `src/routes/index.tsx` posts straight to Formspree from the
+browser using `useForm(FORMSPREE_FORM_ID)` from `@formspree/react`.
 
-## Configuration Files
+- The form ID is a public identifier — no secret, no env var, nothing to
+  configure in Cloudflare.
+- `state.submitting` / `state.succeeded` / `state.errors` drive the button, the
+  success panel, and the inline error line.
+- A hidden `_gotcha` honeypot field is included; Formspree discards submissions
+  that fill it in.
+- The group-size range input submits as `group-size`; the email input must stay
+  named `email` so Formspree uses it as the reply-to address.
 
-| File | Purpose |
-|------|---------|
-| `vite.config.ts` | Vite plugins: TanStack Start, Netlify, Tailwind, Content Collections |
-| `tsconfig.json` | TypeScript config with `@/*` path alias for `src/*` |
-| `netlify.toml` | Build command, output directory, dev server settings |
-| `content-collections.ts` | Zod schemas for jobs and education frontmatter |
-| `styles.css` | Tailwind imports + CSS custom properties (oklch colors) |
+Keep the existing visual design of this form (slider, counter, size label,
+success state) intact when changing submission plumbing.
 
 ## Development Commands
 
 ```bash
-npm run dev      # Start dev server
-npm run build    # Production build
-npm run preview  # Preview production build
+npm run dev        # Vite dev server on port 3000
+npm run build      # Production build + prerender into dist/client
+npm run preview    # Serve the built site via Wrangler, as Cloudflare Pages will
+npm run deploy     # Build and publish to Cloudflare Pages
+npm run typecheck  # tsc --noEmit
 ```
+
+## Deployment
+
+Cloudflare Pages, connected to the GitHub repo.
+
+| Setting | Value |
+|---------|-------|
+| Build command | `npm run build` |
+| Build output directory | `dist/client` |
+| Node version | 22 |
+
+`main` publishes to production; other branches get preview deployments.
+
+`public/robots.txt` and `public/sitemap.xml` hardcode the site origin — update
+both when a custom domain is attached.
 
 ## Conventions
 
@@ -103,44 +113,16 @@ npm run preview  # Preview production build
 - Routes: kebab-case files
 
 ### Styling
-- Tailwind CSS utility classes
-- `cn()` helper for conditional class merging
-- CSS variables for theme tokens in `styles.css`
+- Tailwind CSS utility classes, with inline `style` objects for one-off values
+  (brand purple `#7C3AED`, shadows, transforms)
+- Scroll-reveal animation classes (`.reveal`, `.reveal-scale`, `.reveal-left`,
+  `.reveal-right`, `.divider-animated`, `.story-line`) are wired up by the
+  `useReveal` IntersectionObserver hook in `index.tsx`
 
 ### TypeScript
-- Strict mode enabled
-- Import paths use `@/` alias
-- Zod for runtime validation
-- Type-only imports with `type` keyword
+- Strict mode, `noUnusedLocals` and `noUnusedParameters` are on
+- Import paths use the `@/` alias
+- Type-only imports use the `type` keyword
 
 ### State Management
-- React hooks for local state
-- Zustand if you need it for global state
-### Marketing Site with AI Assistant
-
-Marketing site with TanStack AI chat assistant. No Stripe checkout.
-
-**AI tools available:**
-- `getProducts` - Get all products from catalog
-- `recommendProduct` - Display product recommendation card (MUST use for recommendations)
-
-**Components:** ProductAIAssistant, ProductRecommendation
-
-**Dependencies:** @tanstack/ai, streamdown
-
-## Environment Variables
-
-For AI: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or OLLAMA_BASE_URL (same as ai add-on).
-
-## Application Name
-
-This starter uses "Application Name" as a placeholder throughout the UI and metadata. Replace it with the user's desired application name in the following locations:
-
-### UI Components
-- `src/components/Header.tsx` — app name displayed in the header
-- `src/components/HeaderNav.tsx` — app name in the mobile navigation header
-
-### SEO Metadata
-- `src/routes/__root.tsx` — the `title` field in the `head()` configuration
-
-Search for all occurrences of "Application Name" in the `src/` directory and replace with the user's application name.
+- React hooks for local state; no global store in use

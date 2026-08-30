@@ -1,5 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useForm } from '@formspree/react'
+
+/** Formspree form ID. Public by design — submissions are posted from the browser. */
+const FORMSPREE_FORM_ID = 'xbgjlwvo'
 
 export const Route = createFileRoute('/')({
   component: HuddleLanding,
@@ -27,12 +31,6 @@ export const Route = createFileRoute('/')({
     ],
   }),
 })
-
-function encode(data: Record<string, string>) {
-  return Object.entries(data)
-    .map(([key, val]) => `${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
-    .join('&')
-}
 
 /* ── HOOKS ─────────────────────────────────────────────────── */
 
@@ -81,41 +79,6 @@ function useParallax() {
   }, [])
 
   return ref
-}
-
-function useCountUp(target: number, duration: number = 1200) {
-  const [value, setValue] = useState(0)
-  const [started, setStarted] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) setStarted(true)
-      },
-      { threshold: 0.5 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    if (!started) return
-    const start = performance.now()
-    const animate = (now: number) => {
-      const elapsed = now - start
-      const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setValue(Math.round(eased * target))
-      if (progress < 1) requestAnimationFrame(animate)
-    }
-    requestAnimationFrame(animate)
-  }, [started, target, duration])
-
-  return { ref, value }
 }
 
 /* ── LOGO ──────────────────────────────────────────────────── */
@@ -325,31 +288,8 @@ function PhoneMockupLeader() {
 /* ── EARLY ACCESS FORM ─────────────────────────────────────── */
 
 function EarlyAccessForm() {
-  const [email, setEmail] = useState('')
   const [groupSize, setGroupSize] = useState(30)
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await fetch('/huddle-form.html', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: encode({
-          'form-name': 'early-access',
-          email,
-          'group-size': String(groupSize),
-        }),
-      })
-      setSubmitted(true)
-    } catch {
-      setSubmitted(true)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [state, handleSubmit] = useForm(FORMSPREE_FORM_ID)
 
   const getSizeLabel = useCallback((size: number) => {
     if (size <= 15) return 'Intimate crew'
@@ -359,7 +299,7 @@ function EarlyAccessForm() {
     return 'Movement'
   }, [])
 
-  if (submitted) {
+  if (state.succeeded) {
     return (
       <div className="text-center py-8">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6"
@@ -374,11 +314,21 @@ function EarlyAccessForm() {
     )
   }
 
+  const errors = state.errors
+    ? [...state.errors.getFormErrors(), ...state.errors.getFieldErrors('email')]
+        .map((error) => error.message)
+    : []
+
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto">
-      <input type="hidden" name="form-name" value="early-access" />
-      <div style={{ display: 'none' }}>
-        <input type="text" name="bot-field" tabIndex={-1} autoComplete="off" />
+      <input
+        type="hidden"
+        name="_subject"
+        value="Huddle — new early access request"
+      />
+      {/* Honeypot: Formspree silently discards submissions that fill this in. */}
+      <div style={{ display: 'none' }} aria-hidden="true">
+        <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" />
       </div>
 
       {/* Group Size Slider */}
@@ -403,6 +353,7 @@ function EarlyAccessForm() {
             value={groupSize}
             onChange={(e) => setGroupSize(Number(e.target.value))}
             className="w-full max-w-xs mx-auto block"
+            aria-label="Youth group size"
           />
           <div className="flex justify-between max-w-xs mx-auto mt-2">
             <span className="text-[10px] text-[#c4c9d4]">5</span>
@@ -416,10 +367,9 @@ function EarlyAccessForm() {
         <input
           type="email"
           name="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
           required
+          autoComplete="email"
           className="flex-1 px-5 py-3.5 rounded-xl border border-[#e5e7eb] bg-white text-[#1a1a1a] text-base outline-none transition-all"
           style={{ boxShadow: 'none' }}
           onFocus={(e) => {
@@ -433,16 +383,16 @@ function EarlyAccessForm() {
         />
         <button
           type="submit"
-          disabled={loading}
+          disabled={state.submitting}
           className="px-7 py-3.5 rounded-xl font-semibold text-white text-base transition-all whitespace-nowrap"
           style={{
-            background: loading ? '#9b59f7' : '#7C3AED',
-            cursor: loading ? 'wait' : 'pointer',
+            background: state.submitting ? '#9b59f7' : '#7C3AED',
+            cursor: state.submitting ? 'wait' : 'pointer',
             border: 'none',
             boxShadow: '0 4px 16px rgba(124, 58, 237, 0.25)',
           }}
           onMouseEnter={(e) => {
-            if (!loading) {
+            if (!state.submitting) {
               (e.target as HTMLElement).style.transform = 'translateY(-1px)'
               ;(e.target as HTMLElement).style.boxShadow = '0 6px 24px rgba(124, 58, 237, 0.35)'
             }
@@ -452,9 +402,15 @@ function EarlyAccessForm() {
             ;(e.target as HTMLElement).style.boxShadow = '0 4px 16px rgba(124, 58, 237, 0.25)'
           }}
         >
-          {loading ? 'Joining…' : 'Get Early Access →'}
+          {state.submitting ? 'Joining…' : 'Get Early Access →'}
         </button>
       </div>
+
+      {errors.length > 0 && (
+        <p role="alert" className="mt-3 text-sm text-center text-[#dc2626]">
+          {errors.join(' ')} Please try again.
+        </p>
+      )}
     </form>
   )
 }

@@ -1,12 +1,16 @@
 {
-  "name": "marketing",
+  "name": "huddle",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "vite build"
+    "build": "vite build",
+    "preview": "wrangler pages dev",
+    "deploy": "npm run build && wrangler pages deploy",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@formspree/react": "^3.0.0",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-router": "^1.163.3",
     "@tanstack/react-start": "^1.166.1",
@@ -20,16 +24,16 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@netlify/vite-plugin-tanstack-start": "^1.2.14",
     "@tailwindcss/vite": "^4.0.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
     "lucide-react": "^0.576.0",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^4.0.6",
     "typescript": "^5.7.2",
-    "rimraf": "^6.0.1",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "wrangler": "^4.127.1"
   }
 }

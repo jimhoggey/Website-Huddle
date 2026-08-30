@@ -4,8 +4,6 @@
 
 Huddle helps youth leaders manage run sheets, rosters, communication, and safety — so leaders lead with clarity and youth feel like they belong.
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/80d34db4-5e83-4606-b8ce-900ac0ec1712/deploy-status)](https://app.netlify.com/sites/youthhuddle/deploys)
-
 ## About
 
 Huddle is an all-in-one youth management platform designed for Friday night youth groups. It provides tools for:
@@ -25,58 +23,90 @@ Huddle is an all-in-one youth management platform designed for Friday night yout
 | Build | Vite 7 |
 | Styling | Tailwind CSS 4 |
 | Language | TypeScript (strict mode) |
-| Deployment | [Netlify](https://www.netlify.com/) |
+| Forms | [Formspree](https://formspree.io/) |
+| Deployment | [Cloudflare Pages](https://pages.cloudflare.com/) |
 
 ## Getting Started
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v22+
-- [pnpm](https://pnpm.io/) (or npm)
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/jimhoggey/youthhuddle.git
-cd youthhuddle
+git clone https://github.com/jimhoggey/Website-Huddle.git
+cd Website-Huddle
 
-# Install dependencies
-pnpm install
-
-# Start the development server
-pnpm dev
+npm install
+npm run dev
 ```
 
-The app will be available at `http://localhost:8888`.
+The dev server runs at `http://localhost:3000`.
 
-### Environment Variables
+## Commands
 
-Create a `.env` file in the project root with any required environment variables. See `.env.example` if available.
-
-## Development
-
-```bash
-# Start local dev server
-pnpm dev
-
-# Production build
-pnpm build
-```
+| Command | What it does |
+|---------|--------------|
+| `npm run dev` | Vite dev server with HMR on port 3000 |
+| `npm run build` | Production build — prerenders every route into `dist/client` |
+| `npm run preview` | Serve the built site locally through Wrangler, exactly as Cloudflare Pages will |
+| `npm run deploy` | Build and publish to Cloudflare Pages from the CLI |
+| `npm run typecheck` | TypeScript check, no emit |
 
 ## Deployment
 
-The app is deployed to Netlify automatically on push to the `main` branch. The Netlify configuration is defined in `netlify.toml`.
+The site is a **fully static** build. `npm run build` prerenders each route to
+HTML in `dist/client`, which Cloudflare Pages serves straight from the edge —
+there is no server runtime, no Worker, and no Pages Function to maintain.
+
+### Cloudflare Pages build settings
+
+Connect the GitHub repo in the Cloudflare dashboard (Workers & Pages → Create →
+Pages → Connect to Git) and use:
+
+| Setting | Value |
+|---------|-------|
+| Framework preset | None |
+| Build command | `npm run build` |
+| Build output directory | `dist/client` |
+| Node version | `22` (set `NODE_VERSION=22` if the default is older) |
+
+Pushes to `main` publish to production; every other branch gets a preview
+deployment. `wrangler.toml` carries the same output directory so CLI deploys
+(`npm run deploy`) and local previews (`npm run preview`) stay in sync with it.
+
+### Custom domain
+
+`public/robots.txt` and `public/sitemap.xml` currently point at
+`https://youthhuddle.pages.dev`. Update both to the production hostname once a
+custom domain is attached in **Pages → Custom domains**.
+
+## Forms
+
+The early-access form posts directly to Formspree from the browser via
+[`@formspree/react`](https://github.com/formspree/formspree-js). The form ID
+lives in `src/routes/index.tsx` as `FORMSPREE_FORM_ID` — Formspree IDs are
+public by design, so there is no secret to configure and nothing to add to the
+Cloudflare environment.
+
+Submissions land in the Formspree dashboard. A hidden `_gotcha` honeypot field
+is included; Formspree silently discards anything that fills it in.
 
 ## Project Structure
 
 ```
 src/
-├── components/     # Reusable UI components
 ├── routes/         # File-based routing (TanStack Router)
-├── styles.css      # Global styles and Tailwind config
-public/             # Static assets
-netlify.toml        # Netlify deployment configuration
+│   ├── __root.tsx  # Root document, SEO metadata, JSON-LD
+│   └── index.tsx   # Landing page + early-access form
+├── router.tsx      # Router instance
+└── styles.css      # Global styles and Tailwind config
+public/
+├── _headers        # Cloudflare Pages response headers
+├── robots.txt
+└── sitemap.xml
+wrangler.toml       # Cloudflare Pages project configuration
 ```
 
 ## License

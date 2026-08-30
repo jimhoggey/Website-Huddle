@@ -1,0 +1,8 @@
+# Cloudflare Pages project configuration.
+#
+# `pages_build_output_dir` is what `wrangler pages dev` and `wrangler pages deploy`
+# publish. The Vite build prerenders every route to static HTML there, so the
+# site is served entirely from Cloudflare's edge with no server runtime.
+name = "youthhuddle"
+pages_build_output_dir = "dist/client"
+compatibility_date = "2025-09-23"

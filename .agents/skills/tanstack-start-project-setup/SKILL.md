@@ -17,7 +17,7 @@ TanStack Start is a full-stack React framework built on TanStack Router, Vinxi, 
 - Configuring router settings
 - Setting up TanStack Query
 - Adding TypeScript configuration
-- Configuring for Netlify deployment
+- Configuring for Cloudflare Pages deployment
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ my-app/
 ├── app.config.ts             # TanStack Start config
 ├── package.json
 ├── tsconfig.json
-└── netlify.toml              # Netlify deployment
+└── wrangler.toml             # Cloudflare Pages deployment
 ```
 
 ## Essential Files
@@ -68,8 +68,8 @@ export default defineConfig({
   
   // Server configuration
   server: {
-    // Server preset (netlify, vercel, node, etc.)
-    preset: 'netlify',
+    // Server preset (cloudflare-pages, cloudflare-module, node, etc.)
+    preset: 'cloudflare-pages',
   },
   
   // Router configuration
@@ -270,35 +270,69 @@ function RootComponent() {
 }
 ```
 
-## Netlify Deployment
+## Cloudflare Pages Deployment
 
-### netlify.toml
+Cloudflare Pages builds are configured in the dashboard (Workers & Pages →
+Create → Pages → Connect to Git) or in `wrangler.toml`. The build command and
+output directory must match what the Vite build actually emits.
 
-```toml
-[build]
-  command = "npm run build"
-  publish = ".output/public"
+### Fully static (prerendered) — preferred for content and marketing sites
 
-[build.environment]
-  NODE_VERSION = "20"
-
-# Functions directory (auto-configured by TanStack Start)
-[functions]
-  directory = ".output/server"
-```
-
-### app.config.ts for Netlify
+Prerender every route at build time and let Pages serve the HTML from the edge.
+No server runtime, no Pages Functions, nothing to keep warm.
 
 ```typescript
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config';
+// vite.config.ts
+tanstackStart({
+  prerender: { enabled: true, crawlLinks: true, failOnError: true },
+})
+```
+
+```toml
+# wrangler.toml
+name = "my-app"
+pages_build_output_dir = "dist/client"
+compatibility_date = "2025-09-23"
+```
+
+| Dashboard setting | Value |
+|-------------------|-------|
+| Build command | `npm run build` |
+| Build output directory | `dist/client` |
+| Node version | `NODE_VERSION=22` |
+
+### Server-rendered
+
+When routes genuinely need per-request rendering, build for the Workers runtime
+with `@cloudflare/vite-plugin` instead, and keep `main` pointed at the Start
+server entry:
+
+```typescript
+// vite.config.ts
+import { cloudflare } from '@cloudflare/vite-plugin';
 
 export default defineConfig({
-  server: {
-    preset: 'netlify',
-  },
+  plugins: [
+    cloudflare({ viteEnvironment: { name: 'ssr' } }),
+    tanstackStart(),
+    viteReact(),
+  ],
 });
 ```
+
+### Pages Functions
+
+Anything needing a server on an otherwise-static site goes in a `functions/`
+directory at the repo root — `functions/api/hello.ts` exporting `onRequestPost`
+serves `POST /api/hello`. Add a `public/_routes.json` so static paths skip the
+Function:
+
+```json
+{ "version": 1, "include": ["/api/*"], "exclude": [] }
+```
+
+Secrets are set per-environment under **Pages → Settings → Variables and
+Secrets**, and locally in a gitignored `.dev.vars` file.
 
 ## Environment Variables
 
@@ -482,12 +516,12 @@ export const Route = createRootRoute({
 ## Checklist for New Projects
 
 - [ ] Create project with `create-tanstack-start`
-- [ ] Configure `app.config.ts` with Netlify preset
+- [ ] Configure the build for Cloudflare Pages (prerender, or Workers SSR)
 - [ ] Set up TypeScript paths (`~/`)
 - [ ] Configure TanStack Query if needed
 - [ ] Set up CSS solution (Tailwind recommended)
 - [ ] Create `.env` for local development
-- [ ] Configure `netlify.toml` for deployment
+- [ ] Configure `wrangler.toml` for deployment
 - [ ] Set up database if needed (Drizzle + Neon)
 - [ ] Add ESLint configuration
-- [ ] Set environment variables in Netlify dashboard
+- [ ] Set environment variables in the Cloudflare Pages dashboard

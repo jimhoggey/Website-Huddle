@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://youthhuddle.netlify.app/sitemap.xml
+Sitemap: https://youthhuddle.pages.dev/sitemap.xml
