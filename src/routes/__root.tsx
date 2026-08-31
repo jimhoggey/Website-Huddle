@@ -57,6 +57,13 @@ export const Route = createRootRoute({
           'The youth management app that helps leaders lead with clarity and youth feel like they belong.',
       },
     ],
+    links: [
+      // SVG first: browsers that support it scale cleanly on any display.
+      { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      // .ico fallback carries 16/32/48px bitmaps for older browsers.
+      { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+    ],
   }),
   shellComponent: RootDocument,
 })
