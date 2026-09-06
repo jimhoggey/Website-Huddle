@@ -287,9 +287,95 @@ function PhoneMockupLeader() {
 
 /* ── EARLY ACCESS FORM ─────────────────────────────────────── */
 
+/** Ghost examples that cycle in the location field — the rotation *is* the hint
+ *  that this is free text: share a suburb, a state, a country, or nothing much. */
+const LOCATION_HINTS = [
+  'Melbourne, VIC',
+  'Regional NSW',
+  'Somewhere in Queensland',
+  'Perth — but we travel',
+  'Auckland, New Zealand',
+  'As much or as little as you like',
+]
+
+/** The tick that springs in once a field has something in it. */
+function FieldCheck({ show }: { show: boolean }) {
+  return (
+    <span
+      className="pointer-events-none absolute right-4 top-1/2"
+      style={{
+        opacity: show ? 1 : 0,
+        transform: `translateY(-50%) scale(${show ? 1 : 0.5})`,
+        transition:
+          'opacity 260ms ease, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+      }}
+      aria-hidden="true"
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+        <path
+          d="M3.5 8.4l3 3 6-6.8"
+          stroke="#7C3AED"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
+
 function EarlyAccessForm() {
   const [groupSize, setGroupSize] = useState(30)
+  const [ministryName, setMinistryName] = useState('')
+  const [location, setLocation] = useState('')
+  const [email, setEmail] = useState('')
+  const [focusedField, setFocusedField] = useState<string | null>(null)
+  const [hintIndex, setHintIndex] = useState(0)
+  const [isHintVisible, setIsHintVisible] = useState(true)
   const [state, handleSubmit] = useForm(FORMSPREE_FORM_ID)
+
+  const trimmedName = ministryName.trim()
+
+  // The ghost examples only cycle while the field is genuinely idle.
+  const showLocationHint = !location && focusedField !== 'location'
+
+  useEffect(() => {
+    if (!showLocationHint) return
+
+    const cycleInterval = window.setInterval(() => {
+      setIsHintVisible(false)
+
+      window.setTimeout(() => {
+        setHintIndex((prev) => (prev + 1) % LOCATION_HINTS.length)
+        setIsHintVisible(true)
+      }, 350)
+    }, 3200)
+
+    return () => window.clearInterval(cycleInterval)
+  }, [showLocationHint])
+
+  // Every text input shares one look; focus and filled states are derived, not
+  // poked into the DOM, so re-renders while typing can't drop the focus ring.
+  const inputClass =
+    'w-full px-5 py-3.5 pr-11 rounded-xl border bg-white text-[#1a1a1a] text-base outline-none transition-all duration-300'
+  const labelClass =
+    'block text-left text-[10px] uppercase tracking-widest font-medium text-[#9ca3af] mb-2'
+
+  const fieldStyle = (name: string, filled: boolean) => ({
+    borderColor:
+      focusedField === name
+        ? '#7C3AED'
+        : filled
+          ? 'rgba(124, 58, 237, 0.35)'
+          : '#e5e7eb',
+    boxShadow:
+      focusedField === name ? '0 0 0 3px rgba(124, 58, 237, 0.1)' : 'none',
+  })
+
+  const fieldFocus = (name: string) => ({
+    onFocus: () => setFocusedField(name),
+    onBlur: () => setFocusedField((prev) => (prev === name ? null : prev)),
+  })
 
   const getSizeLabel = useCallback((size: number) => {
     if (size <= 15) return 'Intimate crew'
@@ -308,15 +394,21 @@ function EarlyAccessForm() {
             <path d="M8 16l6 6L24 10" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
-        <p className="text-2xl font-bold text-[#1a1a1a] mb-2">You're on the list.</p>
+        <p className="text-2xl font-bold text-[#1a1a1a] mb-2">
+          {trimmedName ? `${trimmedName} is on the list.` : "You're on the list."}
+        </p>
         <p className="text-[#6b7280] font-light">We'll be in touch before the doors open.</p>
       </div>
     )
   }
 
   const errors = state.errors
-    ? [...state.errors.getFormErrors(), ...state.errors.getFieldErrors('email')]
-        .map((error) => error.message)
+    ? [
+        ...state.errors.getFormErrors(),
+        ...state.errors.getFieldErrors('email'),
+        ...state.errors.getFieldErrors('ministry-name'),
+        ...state.errors.getFieldErrors('location'),
+      ].map((error) => error.message)
     : []
 
   return (
@@ -324,7 +416,11 @@ function EarlyAccessForm() {
       <input
         type="hidden"
         name="_subject"
-        value="Huddle — new early access request"
+        value={
+          trimmedName
+            ? `Huddle — interest from ${trimmedName}`
+            : 'Huddle — new interest'
+        }
       />
       {/* Honeypot: Formspree silently discards submissions that fill this in. */}
       <div style={{ display: 'none' }} aria-hidden="true">
@@ -343,7 +439,15 @@ function EarlyAccessForm() {
             </span>
             <span className="text-lg text-[#9ca3af] font-light">youth</span>
           </div>
-          <p className="text-sm text-[#7C3AED] font-medium mb-6">{getSizeLabel(groupSize)}</p>
+          <p className="text-sm font-medium mb-6">
+            {trimmedName ? (
+              <span style={{ animation: 'riseIn 500ms cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                <span className="text-[#1a1a1a]">{trimmedName}</span>
+                <span className="text-[#d8d3e6]">{' · '}</span>
+              </span>
+            ) : null}
+            <span className="text-[#7C3AED]">{getSizeLabel(groupSize)}</span>
+          </p>
           <input
             type="range"
             name="group-size"
@@ -362,25 +466,91 @@ function EarlyAccessForm() {
         </div>
       </div>
 
+      {/* Ministry name (required) + location (free text, optional) */}
+      <div className="grid sm:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label htmlFor="ministry-name" className={labelClass}>
+            Youth ministry
+          </label>
+          <div className="relative">
+            <input
+              id="ministry-name"
+              type="text"
+              name="ministry-name"
+              placeholder="e.g. Ignite Youth"
+              required
+              autoComplete="organization"
+              value={ministryName}
+              onChange={(e) => setMinistryName(e.target.value)}
+              className={inputClass}
+              style={fieldStyle('ministry-name', trimmedName.length > 0)}
+              {...fieldFocus('ministry-name')}
+            />
+            <FieldCheck show={trimmedName.length > 0} />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="location" className={labelClass}>
+            Where you're based{' '}
+            <span className="text-[#c4c9d4] normal-case tracking-normal">
+              — optional
+            </span>
+          </label>
+          <div className="relative">
+            <input
+              id="location"
+              type="text"
+              name="location"
+              autoComplete="address-level1"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className={inputClass}
+              style={fieldStyle('location', location.trim().length > 0)}
+              {...fieldFocus('location')}
+            />
+            {/* Rotating ghost examples stand in for a static placeholder. */}
+            {showLocationHint && (
+              <span
+                className="pointer-events-none absolute left-5 top-1/2 text-base text-[#9ca3af]"
+                style={{
+                  opacity: isHintVisible ? 1 : 0,
+                  transform: `translateY(-50%) translateY(${isHintVisible ? '0px' : '6px'})`,
+                  transition: 'opacity 350ms ease, transform 350ms ease',
+                }}
+                aria-hidden="true"
+              >
+                {LOCATION_HINTS[hintIndex]}
+              </span>
+            )}
+            <FieldCheck show={location.trim().length > 0} />
+          </div>
+        </div>
+      </div>
+
       {/* Email + Submit */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="email"
-          name="email"
-          placeholder="your@email.com"
-          required
-          autoComplete="email"
-          className="flex-1 px-5 py-3.5 rounded-xl border border-[#e5e7eb] bg-white text-[#1a1a1a] text-base outline-none transition-all"
-          style={{ boxShadow: 'none' }}
-          onFocus={(e) => {
-            e.target.style.borderColor = '#7C3AED'
-            e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)'
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = '#e5e7eb'
-            e.target.style.boxShadow = 'none'
-          }}
-        />
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+        <div className="flex-1 w-full">
+          <label htmlFor="email" className={labelClass}>
+            Email
+          </label>
+          <div className="relative">
+            <input
+              id="email"
+              type="email"
+              name="email"
+              placeholder="your@email.com"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+              style={fieldStyle('email', email.trim().length > 0)}
+              {...fieldFocus('email')}
+            />
+            <FieldCheck show={/.+@.+\..+/.test(email.trim())} />
+          </div>
+        </div>
         <button
           type="submit"
           disabled={state.submitting}
@@ -402,7 +572,7 @@ function EarlyAccessForm() {
             ;(e.target as HTMLElement).style.boxShadow = '0 4px 16px rgba(124, 58, 237, 0.25)'
           }}
         >
-          {state.submitting ? 'Joining…' : 'Get Early Access →'}
+          {state.submitting ? 'Counting you in…' : 'Count me in →'}
         </button>
       </div>
 
@@ -947,7 +1117,7 @@ export default function HuddleLanding() {
         <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.15), transparent)' }} />
 
         <div className="max-w-xl mx-auto relative">
-          <p className="reveal text-[#9ca3af] text-sm uppercase tracking-widest mb-6 font-medium">Early Access</p>
+          <p className="reveal text-[#9ca3af] text-sm uppercase tracking-widest mb-6 font-medium">Register your interest</p>
           <h2
             className="reveal delay-100 font-bold text-[#1a1a1a] mb-4"
             style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', letterSpacing: '-0.03em', lineHeight: 1.1 }}
@@ -988,7 +1158,7 @@ export default function HuddleLanding() {
           <p className="text-[#c4c9d4] text-xs">
             Made with care for Australian youth ministry.
             {' · '}
-            <a href="mailto:hello@huddleapp.au" className="hover:text-[#7C3AED] transition-colors duration-300">hello@huddleapp.au</a>
+            <a href="#early-access" className="hover:text-[#7C3AED] transition-colors duration-300">Get in touch</a>
           </p>
         </div>
       </footer>
