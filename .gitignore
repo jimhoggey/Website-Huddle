@@ -18,5 +18,5 @@ src/routeTree.gen.ts
 # OS files
 .DS_Store
 
-# Local editor/agent scratch config
-.claude/
+# Local dev-server config for agent tooling (.claude/skills/ stays tracked)
+.claude/launch.json
