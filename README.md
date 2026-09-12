@@ -35,7 +35,7 @@ Huddle is an all-in-one youth management platform designed for Friday night yout
 ### Installation
 
 ```bash
-git clone https://github.com/jimhoggey/Website-Huddle.git
+git clone https://github.com/jimhoggey/Huddle-Website.git
 cd Website-Huddle
 
 npm install
